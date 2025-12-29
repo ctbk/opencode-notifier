@@ -1,4 +1,4 @@
-import type { Plugin } from "@opencode-ai/plugin"
+import type { Plugin, PluginInput } from "@opencode-ai/plugin"
 import { loadConfig, isEventSoundEnabled, isEventNotificationEnabled, getMessage, getSoundPath } from "./config"
 import type { EventType, NotifierConfig } from "./config"
 import { sendNotification } from "./notify"
@@ -23,7 +23,26 @@ async function handleEvent(
   await Promise.allSettled(promises)
 }
 
-export const NotifierPlugin: Plugin = async () => {
+async function getSessionDuration(
+  client: PluginInput["client"],
+  sessionID: string
+): Promise<number> {
+  try {
+    const response = await client.session.get({ path: { id: sessionID } })
+    if (response.data) {
+      const session = response.data
+      const createdAt = session.time.created
+      const updatedAt = session.time.updated
+      // Duration in seconds (timestamps are in milliseconds)
+      return (updatedAt - createdAt) / 1000
+    }
+  } catch {
+    // If we can't fetch the session, assume duration is 0
+  }
+  return 0
+}
+
+export const NotifierPlugin: Plugin = async ({ client }) => {
   const config = loadConfig()
 
   return {
@@ -33,6 +52,14 @@ export const NotifierPlugin: Plugin = async () => {
       }
 
       if (event.type === "session.idle") {
+        // Only notify if session duration exceeds minDuration
+        if (config.minDuration > 0) {
+          const sessionID = event.properties.sessionID
+          const duration = await getSessionDuration(client, sessionID)
+          if (duration < config.minDuration) {
+            return
+          }
+        }
         await handleEvent(config, "complete")
       }
 

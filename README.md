@@ -31,6 +31,7 @@ To customize the plugin, create `~/.config/opencode/opencode-notifier.json`:
   "sound": true,
   "notification": true,
   "timeout": 5,
+  "minDuration": 0,
   "events": {
     "permission": { "sound": true, "notification": true },
     "complete": { "sound": true, "notification": true },
@@ -56,6 +57,7 @@ To customize the plugin, create `~/.config/opencode/opencode-notifier.json`:
 | `sound` | boolean | `true` | Global toggle for all sounds |
 | `notification` | boolean | `true` | Global toggle for all notifications |
 | `timeout` | number | `5` | Notification duration in seconds (Linux only) |
+| `minDuration` | number | `0` | Minimum session duration in seconds before triggering completion notifications. Set to `0` to always notify. |
 
 ### Events
 

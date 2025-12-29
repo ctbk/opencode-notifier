@@ -13,6 +13,7 @@ export interface NotifierConfig {
   sound: boolean
   notification: boolean
   timeout: number
+  minDuration: number
   events: {
     permission: EventConfig
     complete: EventConfig
@@ -39,6 +40,7 @@ const DEFAULT_CONFIG: NotifierConfig = {
   sound: false,
   notification: true,
   timeout: 5,
+  minDuration: 0,
   events: {
     permission: { ...DEFAULT_EVENT_CONFIG },
     complete: { ...DEFAULT_EVENT_CONFIG },
@@ -107,6 +109,10 @@ export function loadConfig(): NotifierConfig {
         typeof userConfig.timeout === "number" && userConfig.timeout > 0
           ? userConfig.timeout
           : DEFAULT_CONFIG.timeout,
+      minDuration:
+        typeof userConfig.minDuration === "number" && userConfig.minDuration >= 0
+          ? userConfig.minDuration
+          : DEFAULT_CONFIG.minDuration,
       events: {
         permission: parseEventConfig(userConfig.events?.permission ?? userConfig.permission, defaultWithGlobal),
         complete: parseEventConfig(userConfig.events?.complete ?? userConfig.complete, defaultWithGlobal),
