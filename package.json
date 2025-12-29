@@ -32,7 +32,6 @@
     "alerts"
   ],
   "dependencies": {
-    "@mohak34/opencode-notifier": "^0.1.2",
     "node-notifier": "^10.0.1"
   },
   "devDependencies": {
