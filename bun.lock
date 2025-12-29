@@ -4,6 +4,7 @@
     "": {
       "name": "opencode-notifier",
       "dependencies": {
+        "@mohak34/opencode-notifier": "^0.1.2",
         "node-notifier": "^10.0.1",
       },
       "devDependencies": {
@@ -18,6 +19,8 @@
     },
   },
   "packages": {
+    "@mohak34/opencode-notifier": ["@mohak34/opencode-notifier@0.1.2", "", { "dependencies": { "node-notifier": "^10.0.1" }, "peerDependencies": { "@opencode-ai/plugin": ">=1.0.0" } }, "sha512-O+jGE+rYD6S+Xvn2EvWSiyRTWB1LpRZQyDyzBaJ5nzdhjcG/Uqw7R0gDdOsiyXr5hwhudRyHDU8DDz4oW9pPqQ=="],
+
     "@opencode-ai/plugin": ["@opencode-ai/plugin@1.0.203", "", { "dependencies": { "@opencode-ai/sdk": "1.0.203", "zod": "4.1.8" } }, "sha512-8dBRCOzivtCaqFURvhL9Hvu+KwBczdxnMA6Az5DoP49PpXnddvVbyVzAg3xv0dqMoae2X2AVGfa7Eph9SNSXdg=="],
 
     "@opencode-ai/sdk": ["@opencode-ai/sdk@1.0.203", "", {}, "sha512-Chr/eWlb5jB+aluf70t9H0zv0tkb+otVnnkZQg3xrB7dtHJc6SxqsixAjTGnND6v3mURwchYb0UdcnGM7dOcng=="],
