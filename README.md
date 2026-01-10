@@ -91,6 +91,11 @@ To customize the plugin, create `~/.config/opencode/opencode-notifier.json`:
   "sound": true,
   "notification": true,
   "timeout": 5,
+  "command": {
+    "enabled": false,
+    "path": "/path/to/command",
+    "args": ["--event", "{event}", "--message", "{message}"]
+  },
   "events": {
     "permission": { "sound": true, "notification": true },
     "complete": { "sound": true, "notification": true },
@@ -116,6 +121,7 @@ To customize the plugin, create `~/.config/opencode/opencode-notifier.json`:
 | `sound` | boolean | `true` | Global toggle for all sounds |
 | `notification` | boolean | `true` | Global toggle for all notifications |
 | `timeout` | number | `5` | Notification duration in seconds (Linux only) |
+| `command` | object | — | Command execution settings (enabled/path/args) |
 
 ### Events
 
@@ -153,6 +159,20 @@ Customize notification text:
     "permission": "Action required",
     "complete": "Done!",
     "error": "Something went wrong"
+  }
+}
+```
+
+### Command
+
+Run a custom command when events fire. Use `{event}` and `{message}` tokens in `path` or `args` to inject the event name and message.
+
+```json
+{
+  "command": {
+    "enabled": true,
+    "path": "/path/to/command",
+    "args": ["--event", "{event}", "--message", "{message}"]
   }
 }
 ```

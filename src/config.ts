@@ -9,10 +9,17 @@ export interface EventConfig {
   notification: boolean
 }
 
+export interface CommandConfig {
+  enabled: boolean
+  path: string
+  args?: string[]
+}
+
 export interface NotifierConfig {
   sound: boolean
   notification: boolean
   timeout: number
+  command: CommandConfig
   events: {
     permission: EventConfig
     complete: EventConfig
@@ -39,6 +46,10 @@ const DEFAULT_CONFIG: NotifierConfig = {
   sound: false,
   notification: true,
   timeout: 5,
+  command: {
+    enabled: false,
+    path: "",
+  },
   events: {
     permission: { ...DEFAULT_EVENT_CONFIG },
     complete: { ...DEFAULT_EVENT_CONFIG },
@@ -100,6 +111,11 @@ export function loadConfig(): NotifierConfig {
       notification: globalNotification,
     }
 
+    const userCommand = userConfig.command ?? {}
+    const commandArgs = Array.isArray(userCommand.args)
+      ? userCommand.args.filter((arg: unknown) => typeof arg === "string")
+      : undefined
+
     return {
       sound: globalSound,
       notification: globalNotification,
@@ -107,6 +123,11 @@ export function loadConfig(): NotifierConfig {
         typeof userConfig.timeout === "number" && userConfig.timeout > 0
           ? userConfig.timeout
           : DEFAULT_CONFIG.timeout,
+      command: {
+        enabled: typeof userCommand.enabled === "boolean" ? userCommand.enabled : DEFAULT_CONFIG.command.enabled,
+        path: typeof userCommand.path === "string" ? userCommand.path : DEFAULT_CONFIG.command.path,
+        args: commandArgs,
+      },
       events: {
         permission: parseEventConfig(userConfig.events?.permission ?? userConfig.permission, defaultWithGlobal),
         complete: parseEventConfig(userConfig.events?.complete ?? userConfig.complete, defaultWithGlobal),

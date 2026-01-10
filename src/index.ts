@@ -3,6 +3,7 @@ import { loadConfig, isEventSoundEnabled, isEventNotificationEnabled, getMessage
 import type { EventType, NotifierConfig } from "./config"
 import { sendNotification } from "./notify"
 import { playSound } from "./sound"
+import { runCommand } from "./command"
 
 async function handleEvent(
   config: NotifierConfig,
@@ -10,8 +11,9 @@ async function handleEvent(
 ): Promise<void> {
   const promises: Promise<void>[] = []
 
+  const message = getMessage(config, eventType)
+
   if (isEventNotificationEnabled(config, eventType)) {
-    const message = getMessage(config, eventType)
     promises.push(sendNotification(message, config.timeout))
   }
 
@@ -19,6 +21,8 @@ async function handleEvent(
     const customSoundPath = getSoundPath(config, eventType)
     promises.push(playSound(eventType, customSoundPath))
   }
+
+  runCommand(config, eventType, message)
 
   await Promise.allSettled(promises)
 }
