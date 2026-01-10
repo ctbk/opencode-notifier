@@ -12,18 +12,67 @@ Add the plugin to your `opencode.json` or `opencode.jsonc`:
 }
 ```
 
+Using `@latest` ensures you always get the newest version when the cache is refreshed.
+
+To pin a specific version:
+
+```json
+{
+  "plugin": ["@mohak34/opencode-notifier@0.1.10"]
+}
+```
+
 Restart OpenCode. The plugin will be automatically installed and loaded.
 
 ## Updating
 
-OpenCode caches plugins in `~/.cache/opencode`. To update to the latest version:
+OpenCode caches plugins in `~/.cache/opencode`. Plugins are not auto-updated; you need to clear the cache to get new versions.
 
-1. **Clear the plugin from cache:**
-      ```rm -rf ~/.cache/opencode/node_modules/@mohak34/opencode-notifier```
-2. Restart OpenCode - it will download the latest version.
+### If you use `@latest`
 
-To check your installed version:
-```cat ~/.cache/opencode/node_modules/@mohak34/opencode-notifier/package.json | grep version```
+Clear the cache and restart OpenCode:
+
+**Linux/macOS:**
+
+```bash
+rm -rf ~/.cache/opencode/node_modules/@mohak34/opencode-notifier
+```
+
+**Windows (PowerShell):**
+
+```powershell
+Remove-Item -Recurse -Force "$env:USERPROFILE\.cache\opencode\node_modules\@mohak34\opencode-notifier"
+```
+
+Then restart OpenCode - it will download the latest version automatically.
+
+### If you use a pinned version (e.g., `@0.1.10`)
+
+1. Update the version in your `opencode.json`:
+
+   ```json
+   {
+     "plugin": ["@mohak34/opencode-notifier@0.1.10"]
+   }
+   ```
+
+2. Clear the cache (see commands above)
+
+3. Restart OpenCode
+
+### Check installed version
+
+**Linux/macOS:**
+
+```bash
+cat ~/.cache/opencode/node_modules/@mohak34/opencode-notifier/package.json | grep version
+```
+
+**Windows (PowerShell):**
+
+```powershell
+Get-Content "$env:USERPROFILE\.cache\opencode\node_modules\@mohak34\opencode-notifier\package.json" | Select-String "version"
+```
 
 ## Platform Notes
 
@@ -123,6 +172,81 @@ Use your own sound files:
 ```
 
 If a custom sound file path is provided but the file doesn't exist, the plugin will fall back to the bundled sound.
+
+## Troubleshooting
+
+### macOS: Notifications not showing (only sound works)
+
+**Update to v0.1.10 or later** - this version includes a fix for macOS notification events.
+
+If notifications still don't work after updating:
+
+1. **Install terminal-notifier via Homebrew:**
+
+   ```bash
+   brew install terminal-notifier
+   ```
+
+2. **Check notification permissions:**
+   - Open **System Settings > Notifications**
+   - Find your terminal app (e.g., Ghostty, iTerm2, Terminal)
+   - Make sure notifications are set to **Banners** or **Alerts**
+   - Also enable notifications for **terminal-notifier** if it appears in the list
+
+### Linux: Notifications not showing
+
+1. **Install notify-send:**
+
+   ```bash
+   # Debian/Ubuntu
+   sudo apt install libnotify-bin
+
+   # Fedora
+   sudo dnf install libnotify
+
+   # Arch
+   sudo pacman -S libnotify
+   ```
+
+2. **Test if it works:**
+
+   ```bash
+   notify-send "Test" "Hello"
+   ```
+
+### Linux: Sounds not playing
+
+Install one of these audio players: `paplay`, `aplay`, `mpv`, or `ffplay`.
+
+```bash
+# Debian/Ubuntu (PulseAudio)
+sudo apt install pulseaudio-utils
+
+# Or install mpv
+sudo apt install mpv
+```
+
+### Windows: Notifications not showing
+
+1. Open **Settings > System > Notifications**
+2. Make sure notifications are enabled
+3. Check that your terminal app has notification permissions
+
+### General: Plugin not loading
+
+1. **Check your opencode.json syntax:**
+
+   ```json
+   {
+     "plugin": ["@mohak34/opencode-notifier@latest"]
+   }
+   ```
+
+2. **Clear the cache and restart:**
+
+   ```bash
+   rm -rf ~/.cache/opencode/node_modules/@mohak34/opencode-notifier
+   ```
 
 ## License
 

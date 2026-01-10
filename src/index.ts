@@ -28,7 +28,15 @@ export const NotifierPlugin: Plugin = async () => {
 
   return {
     event: async ({ event }) => {
+      // @deprecated: Old permission system (OpenCode v1.0.223 and earlier)
+      // Uses permission.updated event - will be removed in future version
       if (event.type === "permission.updated") {
+        await handleEvent(config, "permission")
+      }
+
+      // New permission system (OpenCode v1.0.224+)
+      // Uses permission.asked event
+      if ((event as any).type === "permission.asked") {
         await handleEvent(config, "permission")
       }
 
@@ -39,6 +47,9 @@ export const NotifierPlugin: Plugin = async () => {
       if (event.type === "session.error") {
         await handleEvent(config, "error")
       }
+    },
+    "permission.ask": async () => {
+      await handleEvent(config, "permission")
     },
   }
 }
