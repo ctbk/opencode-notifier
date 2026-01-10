@@ -1,8 +1,8 @@
 {
-  "name": "@ctbk/opencode-notifier",
-  "version": "0.1.10",
-  "description": "OpenCode plugin that sends system notifications and plays sounds when permission is needed, generation completes, or errors occur",
-  "author": "ctbk",
+  "name": "@ctrlbrk/ctbk-opencode-notifier",
+  "version": "1.0.0",
+  "description": "OpenCode plugin that sends system notifications and plays sounds when permission is needed, generation completes, or errors occur. Forked from @mohak34/opencode-notifier",
+  "author": "ctrlbrk",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
