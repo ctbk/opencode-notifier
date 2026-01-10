@@ -3,6 +3,7 @@ import { loadConfig, isEventSoundEnabled, isEventNotificationEnabled, getMessage
 import type { EventType, NotifierConfig } from "./config"
 import { sendNotification } from "./notify"
 import { playSound } from "./sound"
+import { runCommand } from "./command"
 
 async function handleEvent(
   config: NotifierConfig,
@@ -10,8 +11,9 @@ async function handleEvent(
 ): Promise<void> {
   const promises: Promise<void>[] = []
 
+  const message = getMessage(config, eventType)
+
   if (isEventNotificationEnabled(config, eventType)) {
-    const message = getMessage(config, eventType)
     promises.push(sendNotification(message, config.timeout))
   }
 
@@ -19,6 +21,8 @@ async function handleEvent(
     const customSoundPath = getSoundPath(config, eventType)
     promises.push(playSound(eventType, customSoundPath))
   }
+
+  runCommand(config, eventType, message)
 
   await Promise.allSettled(promises)
 }
@@ -47,7 +51,15 @@ export const NotifierPlugin: Plugin = async ({ client }) => {
 
   return {
     event: async ({ event }) => {
+      // @deprecated: Old permission system (OpenCode v1.0.223 and earlier)
+      // Uses permission.updated event - will be removed in future version
       if (event.type === "permission.updated") {
+        await handleEvent(config, "permission")
+      }
+
+      // New permission system (OpenCode v1.0.224+)
+      // Uses permission.asked event
+      if ((event as any).type === "permission.asked") {
         await handleEvent(config, "permission")
       }
 
@@ -66,6 +78,9 @@ export const NotifierPlugin: Plugin = async ({ client }) => {
       if (event.type === "session.error") {
         await handleEvent(config, "error")
       }
+    },
+    "permission.ask": async () => {
+      await handleEvent(config, "permission")
     },
   }
 }

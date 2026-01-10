@@ -6,6 +6,9 @@ import { spawn } from "child_process"
 import type { EventType } from "./config"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const DEBOUNCE_MS = 1000
+
+const lastSoundTime: Record<string, number> = {}
 
 function getBundledSoundPath(event: EventType): string {
   return join(__dirname, "..", "sounds", `${event}.wav`)
@@ -68,7 +71,7 @@ async function playOnMac(soundPath: string): Promise<void> {
 }
 
 async function playOnWindows(soundPath: string): Promise<void> {
-  const script = `(New-Object Media.SoundPlayer $args[0]).PlaySync()`
+  const script = `& { (New-Object Media.SoundPlayer $args[0]).PlaySync() }`
   await runCommand("powershell", ["-c", script, soundPath])
 }
 
@@ -76,6 +79,12 @@ export async function playSound(
   event: EventType,
   customPath: string | null
 ): Promise<void> {
+  const now = Date.now()
+  if (lastSoundTime[event] && now - lastSoundTime[event] < DEBOUNCE_MS) {
+    return
+  }
+  lastSoundTime[event] = now
+
   const soundPath = getSoundFilePath(event, customPath)
 
   if (!soundPath) {
