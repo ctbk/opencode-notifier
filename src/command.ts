@@ -18,7 +18,10 @@ export function runCommand(config: NotifierConfig, event: EventType, message: st
     detached: true,
   })
 
-  proc.on("error", () => {})
+  proc.on("error", (error) => {
+    console.error(`[opencode-notifier] Failed to execute command: ${error.message}`)
+    console.error(`[opencode-notifier] Command: ${command} ${args.join(" ")}`)
+  })
 
   proc.unref()
 }

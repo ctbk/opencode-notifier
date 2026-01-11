@@ -167,12 +167,18 @@ Customize notification text:
 
 Run a custom command when events fire. Use `{event}` and `{message}` tokens in `path` or `args` to inject the event name and message.
 
+`command.minDuration` (optional, seconds) gates command execution based on the elapsed prompt execution time.
+- Applies to all events for the custom command.
+- If elapsed time is known and is below `minDuration`, the command is skipped.
+- If elapsed time cannot be determined for an event, the command still runs.
+
 ```json
 {
   "command": {
     "enabled": true,
     "path": "/path/to/command",
-    "args": ["--event", "{event}", "--message", "{message}"]
+    "args": ["--event", "{event}", "--message", "{message}"],
+    "minDuration": 10
   }
 }
 ```

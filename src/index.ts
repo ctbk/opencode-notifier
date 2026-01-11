@@ -7,7 +7,8 @@ import { runCommand } from "./command"
 
 async function handleEvent(
   config: NotifierConfig,
-  eventType: EventType
+  eventType: EventType,
+  elapsedSeconds?: number | null
 ): Promise<void> {
   const promises: Promise<void>[] = []
 
@@ -22,28 +23,100 @@ async function handleEvent(
     promises.push(playSound(eventType, customSoundPath))
   }
 
-  runCommand(config, eventType, message)
+  const minDuration = config.command?.minDuration
+  const shouldSkipCommand =
+    typeof minDuration === "number" &&
+    Number.isFinite(minDuration) &&
+    minDuration > 0 &&
+    typeof elapsedSeconds === "number" &&
+    Number.isFinite(elapsedSeconds) &&
+    elapsedSeconds < minDuration
+
+  if (!shouldSkipCommand) {
+    runCommand(config, eventType, message)
+  }
 
   await Promise.allSettled(promises)
 }
 
-async function getSessionDuration(
+function getSessionIDFromEvent(event: unknown): string | null {
+  if (!event || typeof event !== "object") {
+    return null
+  }
+
+  const anyEvent = event as any
+  const candidates = [
+    anyEvent?.properties?.sessionID,
+    anyEvent?.properties?.sessionId,
+    anyEvent?.sessionID,
+    anyEvent?.sessionId,
+  ]
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.length > 0) {
+      return candidate
+    }
+  }
+
+  return null
+}
+
+async function getElapsedPromptExecutionSeconds(
   client: PluginInput["client"],
   sessionID: string
-): Promise<number> {
+): Promise<number | null> {
   try {
     const response = await client.session.get({ path: { id: sessionID } })
-    if (response.data) {
-      const session = response.data
-      const createdAt = session.time.created
-      const updatedAt = session.time.updated
+    const createdAt = response.data?.time?.created
+    const updatedAt = response.data?.time?.updated
+
+    if (
+      typeof createdAt === "number" &&
+      Number.isFinite(createdAt) &&
+      typeof updatedAt === "number" &&
+      Number.isFinite(updatedAt) &&
+      updatedAt >= createdAt
+    ) {
       // Duration in seconds (timestamps are in milliseconds)
       return (updatedAt - createdAt) / 1000
     }
   } catch {
-    // If we can't fetch the session, assume duration is 0
+    // Best-effort: unknown duration should not cause gating.
   }
-  return 0
+
+  return null
+}
+
+async function getElapsedPromptExecutionSecondsFromEvent(
+  client: PluginInput["client"],
+  event: unknown
+): Promise<number | null> {
+  const sessionID = getSessionIDFromEvent(event)
+  if (!sessionID) {
+    return null
+  }
+
+  return getElapsedPromptExecutionSeconds(client, sessionID)
+}
+
+async function handleEventForOpenCodeEvent(
+  client: PluginInput["client"],
+  config: NotifierConfig,
+  eventType: EventType,
+  event: unknown
+): Promise<void> {
+  const minDuration = config.command?.minDuration
+  const shouldLookupElapsed =
+    !!config.command?.enabled &&
+    typeof config.command?.path === "string" &&
+    config.command.path.length > 0 &&
+    typeof minDuration === "number" &&
+    Number.isFinite(minDuration) &&
+    minDuration > 0
+
+  const elapsedSeconds = shouldLookupElapsed ? await getElapsedPromptExecutionSecondsFromEvent(client, event) : null
+
+  await handleEvent(config, eventType, elapsedSeconds)
 }
 
 export const NotifierPlugin: Plugin = async ({ client }) => {
@@ -54,29 +127,21 @@ export const NotifierPlugin: Plugin = async ({ client }) => {
       // @deprecated: Old permission system (OpenCode v1.0.223 and earlier)
       // Uses permission.updated event - will be removed in future version
       if (event.type === "permission.updated") {
-        await handleEvent(config, "permission")
+        await handleEventForOpenCodeEvent(client, config, "permission", event)
       }
 
       // New permission system (OpenCode v1.0.224+)
       // Uses permission.asked event
       if ((event as any).type === "permission.asked") {
-        await handleEvent(config, "permission")
+        await handleEventForOpenCodeEvent(client, config, "permission", event)
       }
 
       if (event.type === "session.idle") {
-        // Only notify if session duration exceeds minDuration
-        if (config.minDuration > 0) {
-          const sessionID = event.properties.sessionID
-          const duration = await getSessionDuration(client, sessionID)
-          if (duration < config.minDuration) {
-            return
-          }
-        }
-        await handleEvent(config, "complete")
+        await handleEventForOpenCodeEvent(client, config, "complete", event)
       }
 
       if (event.type === "session.error") {
-        await handleEvent(config, "error")
+        await handleEventForOpenCodeEvent(client, config, "error", event)
       }
     },
     "permission.ask": async () => {

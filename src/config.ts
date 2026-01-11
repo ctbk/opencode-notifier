@@ -13,6 +13,7 @@ export interface CommandConfig {
   enabled: boolean
   path: string
   args?: string[]
+  minDuration?: number
 }
 
 export interface NotifierConfig {
@@ -49,6 +50,7 @@ const DEFAULT_CONFIG: NotifierConfig = {
   command: {
     enabled: false,
     path: "",
+    minDuration: 0,
   },
   events: {
     permission: { ...DEFAULT_EVENT_CONFIG },
@@ -116,6 +118,13 @@ export function loadConfig(): NotifierConfig {
       ? userCommand.args.filter((arg: unknown) => typeof arg === "string")
       : undefined
 
+    const commandMinDuration =
+      typeof userCommand.minDuration === "number" &&
+      Number.isFinite(userCommand.minDuration) &&
+      userCommand.minDuration > 0
+        ? userCommand.minDuration
+        : 0
+
     return {
       sound: globalSound,
       notification: globalNotification,
@@ -127,6 +136,7 @@ export function loadConfig(): NotifierConfig {
         enabled: typeof userCommand.enabled === "boolean" ? userCommand.enabled : DEFAULT_CONFIG.command.enabled,
         path: typeof userCommand.path === "string" ? userCommand.path : DEFAULT_CONFIG.command.path,
         args: commandArgs,
+        minDuration: commandMinDuration,
       },
       events: {
         permission: parseEventConfig(userConfig.events?.permission ?? userConfig.permission, defaultWithGlobal),
