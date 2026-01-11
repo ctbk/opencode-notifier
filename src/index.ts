@@ -87,6 +87,23 @@ async function getElapsedPromptExecutionSeconds(
   return null
 }
 
+async function isChildSession(
+  client: PluginInput["client"],
+  sessionID: string
+): Promise<boolean> {
+  try {
+    const response = await client.session.get({ path: { id: sessionID } })
+    const parentID = response.data?.parentID
+
+    // Return true if parentID exists (it's a child session)
+    // Return false if parentID doesn't exist (it's a main session)
+    return !!parentID
+  } catch {
+    // Best-effort: if lookup fails, treat as primary session
+    return false
+  }
+}
+
 async function getElapsedPromptExecutionSecondsFromEvent(
   client: PluginInput["client"],
   event: unknown
@@ -137,7 +154,13 @@ export const NotifierPlugin: Plugin = async ({ client }) => {
       }
 
       if (event.type === "session.idle") {
-        await handleEventForOpenCodeEvent(client, config, "complete", event)
+        const sessionID = getSessionIDFromEvent(event)
+        if (sessionID) {
+          const isChild = await isChildSession(client, sessionID)
+          if (!isChild) {
+            await handleEventForOpenCodeEvent(client, config, "complete", event)
+          }
+        }
       }
 
       if (event.type === "session.error") {

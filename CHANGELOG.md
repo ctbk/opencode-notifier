@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- Session completion notifications now only fire for main (primary) sessions
+- Subagent (child) sessions no longer trigger completion notifications, sounds, or commands
+- This prevents duplicate "complete" notifications and spam when using the Task tool
+- Permission and error events remain unchanged
+
 ## [0.1.10] - 2026-01-04
 
 ### Fixed
