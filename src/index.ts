@@ -159,6 +159,8 @@ export const NotifierPlugin: Plugin = async ({ client }) => {
           const isChild = await isChildSession(client, sessionID)
           if (!isChild) {
             await handleEventForOpenCodeEvent(client, config, "complete", event)
+          } else {
+            await handleEventForOpenCodeEvent(client, config, "subagent_complete", event)
           }
         }
       }

@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from "fs"
 import { join } from "path"
 import { homedir } from "os"
 
-export type EventType = "permission" | "complete" | "error"
+export type EventType = "permission" | "complete" | "subagent_complete" | "error"
 
 export interface EventConfig {
   sound: boolean
@@ -24,16 +24,19 @@ export interface NotifierConfig {
   events: {
     permission: EventConfig
     complete: EventConfig
+    subagent_complete: EventConfig
     error: EventConfig
   }
   messages: {
     permission: string
     complete: string
+    subagent_complete: string
     error: string
   }
   sounds: {
     permission: string | null
     complete: string | null
+    subagent_complete: string | null
     error: string | null
   }
 }
@@ -53,18 +56,21 @@ const DEFAULT_CONFIG: NotifierConfig = {
     minDuration: 0,
   },
   events: {
-    permission: { ...DEFAULT_EVENT_CONFIG },
-    complete: { ...DEFAULT_EVENT_CONFIG },
-    error: { ...DEFAULT_EVENT_CONFIG },
+    permission: { sound: false, notification: true },
+    complete: { sound: false, notification: true },
+    subagent_complete: { sound: false, notification: false },
+    error: { sound: false, notification: true },
   },
   messages: {
     permission: "OpenCode needs permission",
     complete: "OpenCode has finished",
+    subagent_complete: "Subagent has finished",
     error: "OpenCode encountered an error",
   },
   sounds: {
     permission: null,
     complete: null,
+    subagent_complete: null,
     error: null,
   },
 }
@@ -141,16 +147,19 @@ export function loadConfig(): NotifierConfig {
       events: {
         permission: parseEventConfig(userConfig.events?.permission ?? userConfig.permission, defaultWithGlobal),
         complete: parseEventConfig(userConfig.events?.complete ?? userConfig.complete, defaultWithGlobal),
+        subagent_complete: parseEventConfig(userConfig.events?.subagent_complete, { sound: false, notification: false }),
         error: parseEventConfig(userConfig.events?.error ?? userConfig.error, defaultWithGlobal),
       },
       messages: {
         permission: userConfig.messages?.permission ?? DEFAULT_CONFIG.messages.permission,
         complete: userConfig.messages?.complete ?? DEFAULT_CONFIG.messages.complete,
+        subagent_complete: userConfig.messages?.subagent_complete ?? DEFAULT_CONFIG.messages.subagent_complete,
         error: userConfig.messages?.error ?? DEFAULT_CONFIG.messages.error,
       },
       sounds: {
         permission: userConfig.sounds?.permission ?? DEFAULT_CONFIG.sounds.permission,
         complete: userConfig.sounds?.complete ?? DEFAULT_CONFIG.sounds.complete,
+        subagent_complete: userConfig.sounds?.subagent_complete ?? DEFAULT_CONFIG.sounds.subagent_complete,
         error: userConfig.sounds?.error ?? DEFAULT_CONFIG.sounds.error,
       },
     }
