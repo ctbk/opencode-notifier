@@ -1,26 +1,95 @@
 import type { Plugin, PluginInput } from "@opencode-ai/plugin"
-import { loadConfig, isEventSoundEnabled, isEventNotificationEnabled, getMessage, getSoundPath } from "./config"
+import {
+  loadConfig,
+  isEventSoundEnabled,
+  isEventNotificationEnabled,
+  getMessage,
+  getSoundPath,
+} from "./config"
 import type { EventType, NotifierConfig } from "./config"
 import { sendNotification } from "./notify"
 import { playSound } from "./sound"
 import { runCommand } from "./command"
+import { renderTemplate } from "./template"
+import type { TemplateContext } from "./template"
+import { renderNotificationMessage } from "./notification-message"
+import { buildTemplateContext } from "./template-context"
+import type { TemplateContextOptions } from "./template-context"
+
+interface HandleEventOptions {
+  client?: PluginInput["client"]
+  sessionId?: string | null
+  elapsedSeconds?: number | null
+}
+
+type SessionEvent = {
+  properties?: {
+    sessionID?: string
+    sessionId?: string
+  }
+  sessionID?: string
+  sessionId?: string
+}
+
+type EventWithType = {
+  type?: string
+}
 
 async function handleEvent(
   config: NotifierConfig,
   eventType: EventType,
-  elapsedSeconds?: number | null
+  options: HandleEventOptions = {}
 ): Promise<void> {
+  const { client, sessionId, elapsedSeconds } = options
   const promises: Promise<void>[] = []
 
-  const message = getMessage(config, eventType)
+  const messageTemplate = getMessage(config, eventType)
 
+  const commandEnabled =
+    !!config.command?.enabled &&
+    typeof config.command?.path === "string" &&
+    config.command.path.length > 0
+
+  const needsTemplateContext = isEventNotificationEnabled(config, eventType) || commandEnabled
+
+  const contextOptions: TemplateContextOptions = {
+    client,
+    sessionId: sessionId ?? undefined,
+  }
+
+  let sharedContext: TemplateContext | undefined
+
+  if (needsTemplateContext) {
+    try {
+      sharedContext = await buildTemplateContext(contextOptions)
+    } catch {
+      sharedContext = undefined
+    }
+  }
+
+  let notificationMessage: string | undefined
   if (isEventNotificationEnabled(config, eventType)) {
-    promises.push(sendNotification(message, config.timeout))
+    notificationMessage = await renderNotificationMessage({
+      template: messageTemplate,
+      context: sharedContext,
+      contextOptions,
+    })
+
+    promises.push(sendNotification(notificationMessage, config.timeout))
   }
 
   if (isEventSoundEnabled(config, eventType)) {
     const customSoundPath = getSoundPath(config, eventType)
     promises.push(playSound(eventType, customSoundPath))
+  }
+
+  const fallbackContext: TemplateContext = sharedContext ?? {}
+  const fallbackRenderedMessage = renderTemplate(messageTemplate, fallbackContext)
+  const commandMessage = notificationMessage ?? fallbackRenderedMessage
+  const commandContext: TemplateContext = {
+    ...fallbackContext,
+    event: eventType,
+    message: commandMessage,
   }
 
   const minDuration = config.command?.minDuration
@@ -33,7 +102,7 @@ async function handleEvent(
     elapsedSeconds < minDuration
 
   if (!shouldSkipCommand) {
-    runCommand(config, eventType, message)
+    runCommand(config, eventType, commandMessage, { context: commandContext })
   }
 
   await Promise.allSettled(promises)
@@ -44,12 +113,12 @@ function getSessionIDFromEvent(event: unknown): string | null {
     return null
   }
 
-  const anyEvent = event as any
+  const typedEvent = event as SessionEvent
   const candidates = [
-    anyEvent?.properties?.sessionID,
-    anyEvent?.properties?.sessionId,
-    anyEvent?.sessionID,
-    anyEvent?.sessionId,
+    typedEvent.properties?.sessionID,
+    typedEvent.properties?.sessionId,
+    typedEvent.sessionID,
+    typedEvent.sessionId,
   ]
 
   for (const candidate of candidates) {
@@ -59,6 +128,14 @@ function getSessionIDFromEvent(event: unknown): string | null {
   }
 
   return null
+}
+
+function isEventOfType(event: unknown, typeName: string): event is { type: string } {
+  if (typeof event !== "object" || event === null) {
+    return false
+  }
+
+  return (event as EventWithType).type === typeName
 }
 
 async function getElapsedPromptExecutionSeconds(
@@ -122,6 +199,7 @@ async function handleEventForOpenCodeEvent(
   eventType: EventType,
   event: unknown
 ): Promise<void> {
+  const sessionID = getSessionIDFromEvent(event)
   const minDuration = config.command?.minDuration
   const shouldLookupElapsed =
     !!config.command?.enabled &&
@@ -133,7 +211,11 @@ async function handleEventForOpenCodeEvent(
 
   const elapsedSeconds = shouldLookupElapsed ? await getElapsedPromptExecutionSecondsFromEvent(client, event) : null
 
-  await handleEvent(config, eventType, elapsedSeconds)
+  await handleEvent(config, eventType, {
+    client,
+    sessionId: sessionID,
+    elapsedSeconds,
+  })
 }
 
 export const NotifierPlugin: Plugin = async ({ client }) => {
@@ -149,7 +231,7 @@ export const NotifierPlugin: Plugin = async ({ client }) => {
 
       // New permission system (OpenCode v1.0.224+)
       // Uses permission.asked event
-      if ((event as any).type === "permission.asked") {
+      if (isEventOfType(event, "permission.asked")) {
         await handleEventForOpenCodeEvent(client, config, "permission", event)
       }
 

@@ -56,10 +56,10 @@ const DEFAULT_CONFIG: NotifierConfig = {
     minDuration: 0,
   },
   events: {
-    permission: { sound: false, notification: true },
-    complete: { sound: false, notification: true },
+    permission: { ...DEFAULT_EVENT_CONFIG },
+    complete: { ...DEFAULT_EVENT_CONFIG },
     subagent_complete: { sound: false, notification: false },
-    error: { sound: false, notification: true },
+    error: { ...DEFAULT_EVENT_CONFIG },
   },
   messages: {
     permission: "OpenCode needs permission",

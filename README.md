@@ -191,6 +191,33 @@ Run a custom command when events fire. Use `{event}` and `{message}` tokens in `
 }
 ```
 
+### Template Variables
+
+Notification messages (`messages.<event>`) and custom command fields (`command.path`, `command.args`) now support template variables that resolve to runtime context. Available variables include:
+- `{event}` – the current payload event name
+- `{message}` – the original configured message string
+- `{hostname}` – the host where the plugin runs
+- `{working_dir}` – the current working directory OpenCode reports (falls back to `process.cwd()`)
+- `{session_id}` – OpenCode session identifier
+- `{session_title}` – the title of the session when it can be obtained
+- `{last_message}` – the last assistant response body when available
+- `{last_sentence}` – the last sentence of the assistant response, capped at 200 characters
+
+Template resolution is best-effort: unresolved variables become empty strings and renderers never block notifications or commands. Existing `{event}`/`{message}` tokens continue to work, and you can mix new tokens as needed for richer notifications.
+
+```json
+{
+  "messages": {
+    "complete": "{event} finished in {working_dir}",
+    "error": "{hostname}: {last_sentence}"
+  },
+  "command": {
+    "path": "/usr/local/bin/notify",
+    "args": ["--session", "{session_title}", "--event", "{event}"]
+  }
+}
+```
+
 ### Custom Sounds
 
 Use your own sound files:

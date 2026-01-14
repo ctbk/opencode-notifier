@@ -7,7 +7,20 @@ const DEBOUNCE_MS = 1000
 
 const platform = os.type()
 
-let platformNotifier: any
+type NotificationCallback = (error: Error | null, response: string, metadata?: unknown) => void
+
+interface NotificationOptions {
+  title: string
+  message: string
+  timeout: number
+  icon?: string
+}
+
+interface PlatformNotifier {
+  notify(notification: NotificationOptions, callback?: NotificationCallback): void
+}
+
+let platformNotifier: PlatformNotifier | undefined
 
 if (platform === "Linux" || platform.match(/BSD$/)) {
   const { NotifySend } = notifier
@@ -45,19 +58,23 @@ export async function sendNotification(
   }
 
   return new Promise((resolve) => {
-    const notificationOptions: any = {
+    if (!platformNotifier) {
+      resolve()
+      return
+    }
+
+    const notificationOptions: NotificationOptions = {
       title: NOTIFICATION_TITLE,
       message: message,
       timeout: timeout,
       icon: undefined,
     }
 
-    platformNotifier.notify(
-      notificationOptions,
-      (error: any, _response: any) => {
-        if (error) console.error(error)
-        resolve()
-      }
-    )
+    const callback: NotificationCallback = (error) => {
+      if (error) console.error(error)
+      resolve()
+    }
+
+    platformNotifier.notify(notificationOptions, callback)
   })
 }
