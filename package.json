@@ -22,7 +22,8 @@
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node",
     "prepublishOnly": "bun run build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --config .eslintrc.cjs . --ext .ts"
   },
   "keywords": [
     "opencode",
@@ -38,6 +39,9 @@
     "@opencode-ai/plugin": "^1.0.224",
     "@types/node": "^22.0.0",
     "@types/node-notifier": "^8.0.5",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
+    "eslint": "^8.55.0",
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
