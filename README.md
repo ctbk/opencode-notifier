@@ -1,6 +1,6 @@
 # opencode-notifier
 
-OpenCode plugin that plays sounds and sends system notifications when permission is needed, generation completes, or errors occur. Works on macOS, Linux, and Windows.
+OpenCode plugin that plays sounds and sends system notifications when permission is needed, generation completes, errors occur, or the question tool is invoked. Works on macOS, Linux, and Windows.
 
 ## Installation
 
@@ -98,18 +98,21 @@ To customize the plugin, create `~/.config/opencode/opencode-notifier.json`:
   },
   "events": {
     "permission": { "sound": true, "notification": true },
+    "question": { "sound": true, "notification": true }
     "complete": { "sound": true, "notification": true },
     "subagent_complete": { "sound": false, "notification": false },
     "error": { "sound": true, "notification": true }
   },
   "messages": {
     "permission": "OpenCode needs permission",
+    "question": "OpenCode has a question"
     "complete": "OpenCode has finished",
     "subagent_complete": "Subagent has finished",
     "error": "OpenCode encountered an error"
   },
   "sounds": {
     "permission": "/path/to/custom/sound.wav",
+    "question": "/path/to/custom/sound.wav"
     "complete": "/path/to/custom/sound.wav",
     "subagent_complete": "/path/to/custom/sound.wav",
     "error": "/path/to/custom/sound.wav"
@@ -134,6 +137,7 @@ Control sound and notification separately for each event:
 {
   "events": {
     "permission": { "sound": true, "notification": true },
+    "question": { "sound": true, "notification": true }
     "complete": { "sound": false, "notification": true },
     "subagent_complete": { "sound": true, "notification": false },
     "error": { "sound": true, "notification": false }
@@ -147,6 +151,7 @@ Or use a boolean to toggle both:
 {
   "events": {
     "permission": true,
+    "question": true
     "complete": false,
     "subagent_complete": true,
     "error": true
@@ -164,6 +169,7 @@ Customize notification text:
 {
   "messages": {
     "permission": "Action required",
+    "question": "Input needed"
     "complete": "Done!",
     "subagent_complete": "Subagent finished",
     "error": "Something went wrong"
@@ -226,6 +232,7 @@ Use your own sound files:
 {
   "sounds": {
     "permission": "/home/user/sounds/alert.wav",
+    "question": "/home/user/sounds/question.wav"
     "complete": "/home/user/sounds/done.wav",
     "subagent_complete": "/home/user/sounds/subagent-done.wav",
     "error": "/home/user/sounds/error.wav"

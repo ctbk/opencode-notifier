@@ -218,13 +218,11 @@ async function handleEventForOpenCodeEvent(
   })
 }
 
-export const NotifierPlugin: Plugin = async ({ client }) => {
+export const NotifierPlugin: Plugin = async ({ project, client, $, directory, worktree }) => {
   const config = loadConfig()
 
   return {
     event: async ({ event }) => {
-      // @deprecated: Old permission system (OpenCode v1.0.223 and earlier)
-      // Uses permission.updated event - will be removed in future version
       if (event.type === "permission.updated") {
         await handleEventForOpenCodeEvent(client, config, "permission", event)
       }
@@ -253,6 +251,11 @@ export const NotifierPlugin: Plugin = async ({ client }) => {
     },
     "permission.ask": async () => {
       await handleEvent(config, "permission")
+    },
+    "tool.execute.before": async (input, output) => {
+      if (input.tool === "question") {
+        await handleEvent(config, "question")
+      }
     },
   }
 }
