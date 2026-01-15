@@ -112,6 +112,54 @@ describe("buildTemplateContext", () => {
     assert.strictEqual(context.last_sentence, expectedLastSentence)
   })
 
+  it("treats newline-separated segments as separators for {last_sentence}", async () => {
+    const newlineMessage = ["First line", "Second line", "Final line"].join("\n")
+    const client = {
+      session: {
+        messages: async () => ({
+          data: [
+            {
+              info: { role: "assistant" },
+              parts: [{ type: "text", text: newlineMessage }],
+            },
+          ],
+        }),
+      },
+    }
+
+    const context = await buildTemplateContext({
+      client: client as unknown as PluginInput["client"],
+      sessionId: "session-newline",
+    })
+
+    assert.strictEqual(context.last_message, newlineMessage)
+    assert.strictEqual(context.last_sentence, "Final line")
+  })
+
+  it("does not split sentences around filenames with dots for {last_sentence}", async () => {
+    const readmeMessage = "Please refer to README.md for instructions."
+    const client = {
+      session: {
+        messages: async () => ({
+          data: [
+            {
+              info: { role: "assistant" },
+              parts: [{ type: "text", text: readmeMessage }],
+            },
+          ],
+        }),
+      },
+    }
+
+    const context = await buildTemplateContext({
+      client: client as unknown as PluginInput["client"],
+      sessionId: "session-readme",
+    })
+
+    assert.strictEqual(context.last_message, readmeMessage)
+    assert.strictEqual(context.last_sentence, readmeMessage)
+  })
+
   it("defaults last message placeholders to empty strings when message retrieval fails", async () => {
     const client = {
       session: {

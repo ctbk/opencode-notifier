@@ -115,7 +115,18 @@ function resolveFallbackCwd(fallbackCwd?: () => string): string {
 }
 
 const LAST_SENTENCE_MAX_LENGTH = 200
-const SENTENCE_PATTERN = /[^.!?]+[.!?]*/g
+const LINE_SPLIT_PATTERN = /\r?\n/
+const CLOSING_DELIMITERS = new Set([
+  '"',
+  "'",
+  "”",
+  "’",
+  ")",
+  "]",
+  "}",
+  ">",
+  "»",
+])
 
 async function resolveLastAssistantMessage(
   client?: PluginInput["client"],
@@ -181,9 +192,61 @@ function extractLastSentence(value: string): string {
     return ""
   }
 
-  const matches = trimmed.match(SENTENCE_PATTERN)
-  const rawCandidate = matches && matches.length > 0 ? matches[matches.length - 1] : trimmed
-  const candidate = rawCandidate.trim()
+  const lastLine = getLastNonEmptyLine(trimmed)
+  const sentence = getLastSentenceFromLine(lastLine)
 
-  return candidate.slice(0, LAST_SENTENCE_MAX_LENGTH).trim()
+  return sentence.slice(0, LAST_SENTENCE_MAX_LENGTH).trim()
+}
+
+function getLastNonEmptyLine(value: string): string {
+  const lines = value.split(LINE_SPLIT_PATTERN)
+  for (let index = lines.length - 1; index >= 0; index--) {
+    const candidate = lines[index].trim()
+    if (candidate.length > 0) {
+      return candidate
+    }
+  }
+
+  return value
+}
+
+function getLastSentenceFromLine(line: string): string {
+  let sliceStart = 0
+
+  for (let index = 0; index < line.length; index++) {
+    const character = line[index]
+    if (!isSentenceTerminator(character)) {
+      continue
+    }
+
+    let lookahead = index + 1
+    while (lookahead < line.length && isClosingDelimiter(line[lookahead])) {
+      lookahead++
+    }
+
+    if (lookahead === line.length || isWhitespaceCharacter(line[lookahead])) {
+      let nextNonWhitespace = lookahead
+      while (nextNonWhitespace < line.length && isWhitespaceCharacter(line[nextNonWhitespace])) {
+        nextNonWhitespace++
+      }
+
+      if (nextNonWhitespace < line.length) {
+        sliceStart = nextNonWhitespace
+      }
+    }
+  }
+
+  return line.slice(sliceStart)
+}
+
+function isSentenceTerminator(character: string): boolean {
+  return character === "." || character === "!" || character === "?"
+}
+
+function isClosingDelimiter(character: string): boolean {
+  return CLOSING_DELIMITERS.has(character)
+}
+
+function isWhitespaceCharacter(character: string | undefined): boolean {
+  return typeof character === "string" && /\s/.test(character)
 }
