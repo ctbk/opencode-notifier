@@ -81,7 +81,11 @@ const DEFAULT_CONFIG: NotifierConfig = {
   },
 }
 
-function getConfigPath(): string {
+function getConfigPath(override?: string): string {
+  if (override) {
+    return override
+  }
+
   return join(homedir(), ".config", "opencode", "opencode-notifier.json")
 }
 
@@ -106,8 +110,8 @@ function parseEventConfig(
   }
 }
 
-export function loadConfig(): NotifierConfig {
-  const configPath = getConfigPath()
+export function loadConfig(options?: { configPath?: string }): NotifierConfig {
+  const configPath = getConfigPath(options?.configPath)
 
   if (!existsSync(configPath)) {
     return DEFAULT_CONFIG
@@ -172,7 +176,11 @@ export function loadConfig(): NotifierConfig {
         question: userConfig.sounds?.question ?? DEFAULT_CONFIG.sounds.question,
       },
     }
-  } catch {
+  } catch (error) {
+    console.warn(
+      `[opencode-notifier] Failed to parse config at ${configPath}. Using defaults.`,
+      error
+    )
     return DEFAULT_CONFIG
   }
 }

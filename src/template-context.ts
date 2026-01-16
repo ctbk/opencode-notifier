@@ -69,8 +69,8 @@ async function resolveSessionTitle(
     if (typeof title === "string" && title.length > 0) {
       return title
     }
-  } catch {
-    // Best-effort: swallow failures
+  } catch (error) {
+    console.debug("[opencode-notifier] Failed to resolve session title.", error)
   }
 
   return ""
@@ -92,8 +92,8 @@ async function tryGetOpenCodeWorkingDir(client?: PluginInput["client"]): Promise
     if (typeof data?.worktree === "string" && data.worktree.length > 0) {
       return data.worktree
     }
-  } catch {
-    // Best-effort: swallow failures
+  } catch (error) {
+    console.debug("[opencode-notifier] Failed to resolve working directory.", error)
   }
 
   return ""
@@ -158,8 +158,8 @@ async function resolveLastAssistantMessage(
         last_sentence: extractLastSentence(messageText),
       }
     }
-  } catch {
-    // Best-effort: swallow failures
+  } catch (error) {
+    console.debug("[opencode-notifier] Failed to resolve last assistant message.", error)
   }
 
   return { last_message: "", last_sentence: "" }

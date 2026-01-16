@@ -35,13 +35,24 @@ describe("renderNotificationMessage", () => {
     const builder = async () => {
       throw new Error("context failure")
     }
+    const originalDebug = console.debug
+    const calls: unknown[][] = []
 
-    const result = await renderNotificationMessage({
-      template: "Fallback",
-      buildContext: builder,
-    })
+    console.debug = (...args: unknown[]) => {
+      calls.push(args)
+    }
 
-    assert.strictEqual(result, "Fallback")
+    try {
+      const result = await renderNotificationMessage({
+        template: "Fallback",
+        buildContext: builder,
+      })
+
+      assert.strictEqual(result, "Fallback")
+      assert.strictEqual(calls.length, 1)
+    } finally {
+      console.debug = originalDebug
+    }
   })
 
   it("falls back when rendering throws", async () => {
@@ -49,13 +60,24 @@ describe("renderNotificationMessage", () => {
     const renderer = () => {
       throw new Error("render failure")
     }
+    const originalDebug = console.debug
+    const calls: unknown[][] = []
 
-    const result = await renderNotificationMessage({
-      template: "Fallback",
-      buildContext: builder,
-      render: renderer,
-    })
+    console.debug = (...args: unknown[]) => {
+      calls.push(args)
+    }
 
-    assert.strictEqual(result, "Fallback")
+    try {
+      const result = await renderNotificationMessage({
+        template: "Fallback",
+        buildContext: builder,
+        render: renderer,
+      })
+
+      assert.strictEqual(result, "Fallback")
+      assert.strictEqual(calls.length, 1)
+    } finally {
+      console.debug = originalDebug
+    }
   })
 })

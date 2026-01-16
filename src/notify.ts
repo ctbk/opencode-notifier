@@ -1,9 +1,18 @@
 import os from "os"
-import { exec } from "child_process"
+import { execFile } from "child_process"
 import notifier from "node-notifier"
 
 const NOTIFICATION_TITLE = "OpenCode"
 const DEBOUNCE_MS = 1000
+const SECONDS_TO_MS = 1000
+
+function escapeAppleScriptString(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, "\\r")
+    .replace(/\n/g, "\\n")
+}
 
 const platform = os.type()
 
@@ -46,14 +55,27 @@ export async function sendNotification(
 
   if (platform === "Darwin") {
     return new Promise((resolve) => {
-      const escapedMessage = message.replace(/"/g, '\\"')
-      const escapedTitle = NOTIFICATION_TITLE.replace(/"/g, '\\"')
-      exec(
-        `osascript -e 'display notification "${escapedMessage}" with title "${escapedTitle}"'`,
-        () => {
-          resolve()
-        }
-      )
+      const escapedMessage = escapeAppleScriptString(message)
+      const escapedTitle = escapeAppleScriptString(NOTIFICATION_TITLE)
+      const script = `display notification "${escapedMessage}" with title "${escapedTitle}"`
+
+      const child = execFile("osascript", ["-e", script], () => {
+        resolve()
+      })
+
+      if (timeout > 0) {
+        const killTimer = setTimeout(() => {
+          child.kill()
+        }, timeout * SECONDS_TO_MS)
+
+        child.on("exit", () => {
+          clearTimeout(killTimer)
+        })
+      }
+
+      child.on("error", () => {
+        resolve()
+      })
     })
   }
 

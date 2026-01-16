@@ -107,7 +107,7 @@ export async function playSound(
       default:
         break
     }
-  } catch {
-    // Silent fail - notification will still work
+  } catch (error) {
+    console.debug("[opencode-notifier] Failed to play sound.", error)
   }
 }

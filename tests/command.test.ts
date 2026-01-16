@@ -19,18 +19,21 @@ const baseConfig: NotifierConfig = {
     complete: { sound: false, notification: false },
     subagent_complete: { sound: false, notification: false },
     error: { sound: false, notification: false },
+    question: { sound: false, notification: false },
   },
   messages: {
     permission: "permission",
     complete: "complete",
     subagent_complete: "subagent",
     error: "error",
+    question: "question",
   },
   sounds: {
     permission: null,
     complete: null,
     subagent_complete: null,
     error: null,
+    question: null,
   },
 }
 
@@ -38,6 +41,13 @@ type SpawnCapture = {
   command?: string
   args?: string[]
   options?: CommandSpawnOptions
+}
+
+type ExitHandler = (code: number | null, signal: NodeJS.Signals | null) => void
+
+type SpawnMockWithExit = {
+  spawnProcess: CommandSpawner
+  triggerExit: (code: number | null, signal: NodeJS.Signals | null) => void
 }
 
 function createConfig(path: string, args?: string[]): NotifierConfig {
@@ -64,6 +74,35 @@ function createSpawnMock(capture: SpawnCapture) {
 
     return stub
   }) as CommandSpawner
+}
+
+function createSpawnMockWithExit(capture: SpawnCapture): SpawnMockWithExit {
+  let exitHandler: ExitHandler | undefined
+
+  const spawnProcess = ((_command: string, _args: string[], options: CommandSpawnOptions) => {
+    capture.command = _command
+    capture.args = _args
+    capture.options = options
+
+    const stub = {
+      on: (event: string, handler: ExitHandler) => {
+        if (event === "exit") {
+          exitHandler = handler
+        }
+        return stub
+      },
+      unref: () => {},
+    } as unknown as ChildProcessWithoutNullStreams
+
+    return stub
+  }) as CommandSpawner
+
+  return {
+    spawnProcess,
+    triggerExit: (code: number | null, signal: NodeJS.Signals | null) => {
+      exitHandler?.(code, signal)
+    },
+  }
 }
 
 describe("runCommand", () => {
@@ -98,5 +137,37 @@ describe("runCommand", () => {
 
     assert.strictEqual(capture.command, "cmd ")
     assert.deepStrictEqual(capture.args, ["", "permission"])
+  })
+
+  it("logs exit codes when commands fail", () => {
+    const capture: SpawnCapture = {}
+    const config = createConfig("/bin/echo")
+    const spawnMock = createSpawnMockWithExit(capture)
+    const originalError = console.error
+    const calls: unknown[][] = []
+
+    console.error = (...args: unknown[]) => {
+      calls.push(args)
+    }
+
+    try {
+      runCommand(config, "complete", "Done", {
+        spawnProcess: spawnMock.spawnProcess,
+      })
+
+      spawnMock.triggerExit(2, null)
+
+      assert.strictEqual(calls.length, 2)
+      assert.ok(
+        typeof calls[0]?.[0] === "string" &&
+          calls[0]?.[0].includes("Command exited with code 2")
+      )
+      assert.ok(
+        typeof calls[1]?.[0] === "string" &&
+          calls[1]?.[0].includes("Command: /bin/echo")
+      )
+    } finally {
+      console.error = originalError
+    }
   })
 })

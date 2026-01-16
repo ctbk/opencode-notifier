@@ -36,11 +36,22 @@ describe("buildTemplateContext", () => {
         },
       },
     }
+    const originalDebug = console.debug
+    const calls: unknown[][] = []
 
-    const context = await buildTemplateContext({ client: client as unknown as PluginInput["client"] })
+    console.debug = (...args: unknown[]) => {
+      calls.push(args)
+    }
 
-    assert.strictEqual(context.working_dir, expectedCwd)
-    assert.strictEqual(context.hostname, expectedHostname)
+    try {
+      const context = await buildTemplateContext({ client: client as unknown as PluginInput["client"] })
+
+      assert.strictEqual(context.working_dir, expectedCwd)
+      assert.strictEqual(context.hostname, expectedHostname)
+      assert.strictEqual(calls.length, 1)
+    } finally {
+      console.debug = originalDebug
+    }
   })
 
   it("enriches the context with the session title when available", async () => {
@@ -70,13 +81,24 @@ describe("buildTemplateContext", () => {
         },
       },
     }
+    const originalDebug = console.debug
+    const calls: unknown[][] = []
 
-    const context = await buildTemplateContext({
-      client: client as unknown as PluginInput["client"],
-      sessionId: "session-456",
-    })
+    console.debug = (...args: unknown[]) => {
+      calls.push(args)
+    }
 
-    assert.strictEqual(context.session_title, "")
+    try {
+      const context = await buildTemplateContext({
+        client: client as unknown as PluginInput["client"],
+        sessionId: "session-456",
+      })
+
+      assert.strictEqual(context.session_title, "")
+      assert.strictEqual(calls.length, 1)
+    } finally {
+      console.debug = originalDebug
+    }
   })
 
   it("enriches the context with the last assistant message and sentence", async () => {
@@ -168,13 +190,24 @@ describe("buildTemplateContext", () => {
         },
       },
     }
+    const originalDebug = console.debug
+    const calls: unknown[][] = []
 
-    const context = await buildTemplateContext({
-      client: client as unknown as PluginInput["client"],
-      sessionId: "session-000",
-    })
+    console.debug = (...args: unknown[]) => {
+      calls.push(args)
+    }
 
-    assert.strictEqual(context.last_message, "")
-    assert.strictEqual(context.last_sentence, "")
+    try {
+      const context = await buildTemplateContext({
+        client: client as unknown as PluginInput["client"],
+        sessionId: "session-000",
+      })
+
+      assert.strictEqual(context.last_message, "")
+      assert.strictEqual(context.last_sentence, "")
+      assert.strictEqual(calls.length, 1)
+    } finally {
+      console.debug = originalDebug
+    }
   })
 })

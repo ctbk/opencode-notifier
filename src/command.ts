@@ -21,6 +21,7 @@ export interface RunCommandOptions {
   context?: TemplateContext
   render?: typeof renderTemplate
   spawnProcess?: CommandSpawner
+  logger?: Pick<typeof console, "error">
 }
 
 export function runCommand(
@@ -37,6 +38,7 @@ export function runCommand(
     context: providedContext = {},
     render = renderTemplate,
     spawnProcess = defaultSpawnProcess,
+    logger = console,
   } = options ?? {}
 
   const templateContext: TemplateContext = {
@@ -53,9 +55,24 @@ export function runCommand(
     detached: true,
   })
 
+  const commandDetails = `${command} ${args.join(" ")}`.trim()
+
   proc.on("error", (error: Error) => {
-    console.error(`[opencode-notifier] Failed to execute command: ${error.message}`)
-    console.error(`[opencode-notifier] Command: ${command} ${args.join(" ")}`)
+    logger.error(`[opencode-notifier] Failed to execute command: ${error.message}`)
+    logger.error(`[opencode-notifier] Command: ${commandDetails}`)
+  })
+
+  proc.on("exit", (code, signal) => {
+    if (code && code !== 0) {
+      logger.error(`[opencode-notifier] Command exited with code ${code}.`)
+      logger.error(`[opencode-notifier] Command: ${commandDetails}`)
+      return
+    }
+
+    if (signal) {
+      logger.error(`[opencode-notifier] Command terminated with signal ${signal}.`)
+      logger.error(`[opencode-notifier] Command: ${commandDetails}`)
+    }
   })
 
   proc.unref()

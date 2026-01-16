@@ -25,7 +25,8 @@ export async function renderNotificationMessage(
   try {
     const effectiveContext = context ?? (await buildContext(contextOptions))
     return render(template, effectiveContext)
-  } catch {
+  } catch (error) {
+    console.debug("[opencode-notifier] Failed to render notification message.", error)
     return template
   }
 }
