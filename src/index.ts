@@ -218,7 +218,7 @@ async function handleEventForOpenCodeEvent(
   })
 }
 
-export const NotifierPlugin: Plugin = async ({ project, client, $, directory, worktree }) => {
+export const NotifierPlugin: Plugin = async ({ client }) => {
   const config = loadConfig()
 
   return {
@@ -250,11 +250,11 @@ export const NotifierPlugin: Plugin = async ({ project, client, $, directory, wo
       }
     },
     "permission.ask": async () => {
-      await handleEvent(config, "permission")
+      await handleEventForOpenCodeEvent(client, config, "permission", { type: "permission.ask" })
     },
-    "tool.execute.before": async (input, output) => {
+    "tool.execute.before": async (input) => {
       if (input.tool === "question") {
-        await handleEvent(config, "question")
+        await handleEventForOpenCodeEvent(client, config, "question", input)
       }
     },
   }
